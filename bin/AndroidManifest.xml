@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="es.uma.lcc.nativejpegencoder"
+    android:versionCode="1"
+    android:versionName="1.0" >
+
+    <uses-sdk
+        android:minSdkVersion="10"
+        android:targetSdkVersion="17" />
+    
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+    <uses-permission android:name="android.permission.USE_CREDENTIALS" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/ic_oorlo"
+        android:label="@string/app_name"
+        android:theme="@style/AppTheme" >
+        <activity android:name="es.uma.lcc.lockpic.SelectorActivity" />
+        <activity android:name="es.uma.lcc.lockpic.DescramblerActivity" />
+        <activity android:name="es.uma.lcc.lockpic.ContactPickActivity" 
+            android:theme="@android:style/Theme.Dialog" />
+        <activity android:name="es.uma.lcc.lockpic.EmailActivity"
+            android:theme="@android:style/Theme.Dialog" />
+        <activity android:name="es.uma.lcc.lockpic.PicturesViewActivity"
+            android:theme="@android:style/Theme.Dialog" />
+        <activity
+            android:name="es.uma.lcc.lockpic.MainActivity"
+            android:label="@string/app_name" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+        		<action android:name="android.intent.action.VIEW" />
+        		<category android:name="android.intent.category.DEFAULT" />
+        		<data android:mimeType="image/*" />
+    		</intent-filter>
+        </activity>
+        <activity android:name="es.uma.lcc.lockpic.PictureDetailsActivity" />
+        
+        <!-- <activity
+            android:name="com.example.nativejpegencoder.DecryptActivity"
+            android:label="@string/app_name" >
+            <intent-filter>
+        		<action android:name="android.intent.action.VIEW" />
+        		<category android:name="android.intent.category.DEFAULT" />
+        		<data android:mimeType="image/*" />
+    		</intent-filter>
+        </activity> -->
+    </application>
+
+</manifest>
