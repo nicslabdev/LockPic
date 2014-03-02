@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="@drawable/background_gradient"
+    android:baselineAligned="false"
+    >
+    
+    <RelativeLayout
+        android:layout_width="70dp"
+        android:layout_height="fill_parent"
+        android:layout_weight="0.7"
+        android:id="@+id/helperLayout">
+		<ImageView
+		    android:id="@+id/helperImageView"
+		    android:layout_width="wrap_content"
+		    android:layout_height="wrap_content"
+		    android:layout_marginLeft="10dp"
+		    android:layout_marginRight="5dp"
+		    android:contentDescription="@string/accessibilityImageHelper"
+		    android:layout_centerInParent="true"
+		     android:layout_marginTop="10dp"
+		     android:layout_marginBottom="10dp"
+		    />
+    </RelativeLayout>
+    
+    <RelativeLayout
+        android:orientation="vertical"
+        android:layout_height="fill_parent"
+        android:layout_width="50dp"
+        android:layout_weight="1" >
+		 <ExpandableListView
+		     android:id="@+id/android:list"
+		     android:layout_width="fill_parent"
+		     android:layout_height="wrap_content"
+		     android:layout_marginTop="10dp"
+		     android:layout_marginBottom="65dp"
+		     android:layout_marginRight="10dp"
+		      />
+	     <Button
+	         android:id="@+id/buttonCancel"
+	         android:layout_width="wrap_content"
+	         android:layout_height="wrap_content"
+	         android:layout_alignParentBottom="true"
+	         android:layout_alignParentRight="true"
+	         android:layout_marginBottom="10dp"
+	         android:layout_marginRight="10dp"
+	         android:text="@string/negativePicDetailsButton"
+	         android:onClick="buttonCancelClick"
+	         android:background="@android:drawable/btn_default" />
+	
+	     <Button
+	         android:id="@+id/buttonConfirm"
+	         android:layout_width="wrap_content"
+	         android:layout_height="wrap_content"
+	         android:layout_alignBaseline="@+id/buttonCancel"
+	         android:layout_alignBottom="@+id/buttonCancel"
+	         android:layout_alignParentLeft="true"
+	         android:layout_marginLeft="10dp"
+	         android:text="@string/positivePicDetailsButton"
+	         android:onClick="buttonConfirmClick"
+	         android:background="@android:drawable/btn_default" />
+     </RelativeLayout>
+</LinearLayout>

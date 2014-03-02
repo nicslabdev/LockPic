@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:clickable="false">
+    
+ 
+    <TextView android:id="@+id/empty_text"
+        android:clickable="false"
+         android:paddingLeft="50dp"
+         android:focusable="false"
+         android:textSize="18sp"
+         android:textStyle="italic"
+         android:textColor="#88888888"
+         android:text="Empty"
+         android:layout_width="fill_parent"
+         android:layout_height="30dp"
+         android:layout_centerVertical="true"/>
+ 
+</RelativeLayout>

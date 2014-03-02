@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">LockPic</string>
+    
+    <!-- UI strings for MainActivity -->
+    <string name="buttonEncrypt">Encrypt</string>
+    <string name="buttonDecrypt">Decrypt</string>
+    <string name="buttonMyPictures">My Pictures</string>
+    <string name="action_settings">Settings</string>
+    <string name="menuLogout">Logout</string>
+    <string name="emailSelectTitle">Select a Google account</string>
+    <string name="accessibilityImageView">Decrypted image is displayed here</string>
+    <string name="shareGooglePlus">Share to Google+</string>
+    <string name="loggedInAs">"Logged in as: "</string>
+    <string name="buttonLogout"><u>"[ Logout ]"</u></string>
+    
+    <!-- Toast strings (responses to user) for MainActivity -->
+    <string name="noConnectionWarning">Error connecting to server</string>
+    <string name="noKeysRetrievedWarning">No keys retrieved</string>
+    <string name="encryptionSuccess">Encryption successful</string>
+    <string name="encryptionFailure">Encryption failed - unsupported JPEG subformat</string>
+    <string name="updateSuccessful">Update successful</string>
+    <string name="updateFailure">Update failed</string>
+    <string name="fileCorruptedWarning">File not found or corrupted</string>
+    <string name="permissionToSelfWarning">You don\'t need to grant permissions on yourself!</string>
+    <string name="unknownIntent">File path could not be retrieved from intent</string>
+    <string name="unreachablePathWarning">File unreachable - try moving it to your SD card</string>
+    
+    <!-- UI strings for SelectorActivity/DrawView -->
+    <string name="selectorForwardButton">Done!</string>
+    <string name="selectorBackButton">Back</string>
+    <string name="facesButton">Faces</string>
+    
+    <!-- Toast strings for SelectorActivity/DrawView -->
+    <string name="maxRegionsWarningBegin">"No more than "</string>
+    <string name="maxRegionsWarningEnd">" regions allowed"</string>
+    <string name="noOverlapWarning">Rectangles can not overlap</string>
+    <string name="noRegionsWarning">Select at least one region!</string>
+    <string name="addPermissionsPopup">Touch a square to grant permissions</string>
+    <string name="noFacesFound">No faces found</string>
+    
+    <!-- UI strings for SimpleContactPickActivity -->
+    <string name="emailListAddButton">Add e-mail</string>
+    <string name="emailListPositiveButton">Done</string>
+    <string name="addEmailTitle">Add e-mail</string>
+    <string name="positiveEmailButton">OK</string>
+    <string name="negativeEmailButton">Cancel</string>
+    
+    <!-- Toast strings for SimpleContactPickActivity -->
+    <string name="malformedEmailWarning">Not a valid email!</string>
+    
+    <!-- UI strings for PicturesViewActivity -->
+    <string name="myPicsEmptyMessage">No pictures uploaded yet</string>
+    <string name="dateCreated">"Encrypted: "</string>
+    
+    <!-- UI strings for PictureDetailsActivity -->
+    <string name="coordSeparator">to</string> <!-- DO NOT use a number here -->
+    <string name="positivePicDetailsButton">Confirm</string>
+    <string name="negativePicDetailsButton">Cancel</string>
+    <string name="addEmailPicDetailsButton">Add</string>
+    <string name="confirmRevokePermissionMessage">Do you want to revoke this permission?</string>
+    <string name="revokePermissionPositiveButton">Yes</string>
+    <string name="revokePermissionNegativeButton">No</string>
+    <string name="accessibilityImageHelper">Encrypted regions are shown here</string>
+    
+    <!-- ProgressDialog texts -->
+    <string name="connectingServerDialog">Connecting to server</string>
+    <string name="authenticatingDialog">Authenticating</string>
+    <string name="searchingDialog">Searching</string>
+    <string name="encryptingDialog">Encrypting</string>
+    <string name="decryptingDialog">Decrypting</string>
+    <string name="pleaseWaitDialog">Please wait</string>
+
+</resources>

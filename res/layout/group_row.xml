@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:focusable="false"
+    android:background="@drawable/explist_header">
+
+ 
+    <TextView android:id="@+id/row_name"
+         android:textSize="22sp"
+         android:textStyle="normal"
+         android:layout_width="wrap_content"
+         android:layout_height="wrap_content"
+         android:textColor="#FFFFFF"
+         android:layout_alignParentRight="true"
+         android:layout_centerVertical="true"
+         android:layout_marginRight="10dp"
+         />
+    
+    <Button
+        android:id="@+id/group_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:focusable="false"
+        android:text="@string/addEmailPicDetailsButton"
+        android:layout_alignParentLeft="true"
+        android:paddingLeft="30dp"
+        android:background="@android:drawable/btn_default" />
+ 
+</RelativeLayout>

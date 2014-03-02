@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- UI strings for MainActivity -->
+    <string name="buttonEncrypt">Cifrar</string>
+    <string name="buttonDecrypt">Descifrar</string>
+    <string name="buttonMyPictures">Mis imágenes</string>
+    <string name="action_settings">Ajustes</string>
+    <string name="menuLogout">Cerrar sesión</string>
+    <string name="emailSelectTitle">Selecciona una cuenta de Google</string>
+    <string name="accessibilityImageView">La imagen descifrada se muestra aquí</string>
+    <string name="shareGooglePlus">Compartir en Google+</string>
+    <string name="loggedInAs">"Sesión actual: "</string>
+    <string name="buttonLogout"><u>"[ Cambiar ]"</u></string>
+    
+    <!-- Toast strings (responses to user) for MainActivity -->
+    <string name="noConnectionWarning">Error conectando al servidor</string>
+    <string name="noKeysRetrievedWarning">No se han recibido claves</string>
+    <string name="encryptionSuccess">Cifrado con éxito</string>
+    <string name="encryptionFailure">Fallo en el cifrado, archivo en un formato JPEG no reconocido</string>
+    <string name="updateSuccessful">Actualizado con éxito</string>
+    <string name="updateFailure">Fallo en la actualización</string>
+    <string name="fileCorruptedWarning">Archivo inexistente o corrupto</string>
+    <string name="permissionToSelfWarning">¡No hace falta que te des permisos a ti mismo!</string>
+    <string name="unknownIntent">Ruta del archivo no encontrada en Intent</string>
+    <string name="unreachablePathWarning">Archivo inaccesible, prueba a moverlo a tu tarjeta SD</string>
+    
+    <!-- UI strings for SelectorActivity/DrawView -->
+    <string name="selectorForwardButton">Hecho</string>
+    <string name="selectorBackButton">Atrás</string>
+    <string name="facesButton">Caras</string>
+    
+    <!-- Toast strings for SelectorActivity/DrawView -->
+    <string name="maxRegionsWarningBegin">"Se permite un máximo de "</string>
+    <string name="maxRegionsWarningEnd">" regiones"</string>
+    <string name="noOverlapWarning">Los rectángulos no pueden superponerse</string>
+    <string name="noRegionsWarning">Elige al menos una región</string>
+    <string name="addPermissionsPopup">Toca un rectángulo para conceder permisos</string>
+    <string name="noFacesFound">No se han detectado caras</string>
+    
+    <!-- UI strings for SimpleContactPickActivity -->
+    <string name="emailListAddButton">Añadir e-mail</string>
+    <string name="emailListPositiveButton">Hecho</string>
+    <string name="addEmailTitle">Añadir e-mail</string>
+    <string name="positiveEmailButton">OK</string>
+    <string name="negativeEmailButton">Cancelar</string>
+    
+    <!-- Toast strings for SimpleContactPickActivity -->
+    <string name="malformedEmailWarning">E-mail no válido</string>
+    
+    <!-- UI strings for PicturesViewActivity -->
+    <string name="myPicsEmptyMessage">Todavía no has cifrado ninguna imagen</string>
+    <string name="dateCreated">"Cifrada: "</string>
+    
+    <!-- UI strings for PictureDetailsActivity -->
+    <string name="coordSeparator">a</string> <!-- NO usar números en este campo -->
+    <string name="positivePicDetailsButton">Confirmar</string>
+    <string name="negativePicDetailsButton">Cancelar</string>
+    <string name="addEmailPicDetailsButton">Añadir</string>
+    <string name="confirmRevokePermissionMessage">¿Quieres retirar este permiso?</string>
+    <string name="revokePermissionPositiveButton">Sí</string>
+    <string name="revokePermissionNegativeButton">No</string>
+    <string name="accessibilityImageHelper">Aquí se muestran las regiones cifradas</string>
+    
+    <!-- ProgressDialog texts -->
+    <string name="connectingServerDialog">Conectando con el servidor</string>
+    <string name="authenticatingDialog">Autenticando</string>
+    <string name="searchingDialog">Buscando</string>
+    <string name="encryptingDialog">Cifrando</string>
+    <string name="decryptingDialog">Descifrando</string>
+    <string name="pleaseWaitDialog">Por favor espere</string>
+
+</resources>
