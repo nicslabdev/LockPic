@@ -1,0 +1,38 @@
+3a4,6
+> 
+> // Source: https://code.google.com/p/jpeg-compressor/
+> 
+23c26,31
+< 
+---
+> //    inline params(bool decode) : m_decode(decode), m_quality(85), m_subsampling(H2V2), m_no_chroma_discrim_flag(false), m_two_pass_flag(false),
+> //    		m_horizStart(-1), m_horizEnd(-1), m_vertStart(-1), m_vertEnd(-1) { }
+>     inline params(bool decode, int squareNum, int *x0, int *x1, int *y0, int *y1, unsigned char **keys, const char * picId) : m_decode(decode), m_quality(85), m_subsampling(H2V2), m_no_chroma_discrim_flag(false), m_two_pass_flag(false),
+>     			m_squareNum(squareNum), m_horizStart(x0), m_horizEnd(x1), m_vertStart(y0), m_vertEnd(y1), m_keys(keys), m_picId(picId) { }
+>     
+>     
+45a54,59
+>     
+>     bool m_decode;
+>     int m_squareNum;
+>     int *m_horizStart, *m_horizEnd, *m_vertStart, *m_vertEnd;
+>     unsigned char **m_keys;
+>     const char * m_picId;
+51a66,71
+>   // @author - Carlos Parés
+>   // wrapper for compress_image_to_jpeg_file to implement encryption/decryption
+>   // the first boolean param determines if the image is sent for decoding (true)
+>   // or encoding (false).
+>   bool compress_image_to_jpeg_file(bool decode, const char *pFilename, int width, int height, int num_channels, const uint8 *pImage_data, const params &comp_params = params());
+>   
+129a150,151
+>     
+>     int m_rows_processed;
+134a157
+>     void emit_comment();
+152a176
+>     void load_quantized_coefficients_enc(int component_num, int willBeEncoded);
+157a182
+>     void code_block_enc(int component_num, int willBeEncoded);
+158a184
+>     void process_mcu_row_enc(int currentRow);

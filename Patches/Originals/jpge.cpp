@@ -8,26 +8,6 @@
 //                       Code tweaks to fix VS2008 static code analysis warnings (all looked harmless).
 //                       Code review revealed method load_block_16_8_8() (used for the non-default H2V1 sampling mode to downsample chroma) somehow didn't get the rounding factor fix from v1.02.
 
-// Source: https://code.google.com/p/jpeg-compressor/
-
-// Modifications for the LockPic project:
-// Copyright (C) 2014  Carlos Parés: carlosparespulido (at) gmail (dot) com
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-#include <string.h>
-#include <android/log.h>
-
 #include "jpge.h"
 
 #include <stdlib.h>
@@ -36,11 +16,6 @@
 
 #define JPGE_MAX(a,b) (((a)>(b))?(a):(b))
 #define JPGE_MIN(a,b) (((a)<(b))?(a):(b))
-
-#include <jni.h>
-#include <openssl/evp.h>
-#include <openssl/aes.h>
-#include <stdio.h>
 
 namespace jpge {
 
@@ -143,15 +118,6 @@ enum { CONST_BITS = 13, ROW_BITS = 2 };
   u3 = DCT_MUL(u3, -16069); u4 = DCT_MUL(u4, -3196); \
   u3 += z5; u4 += z5; \
   s0 = t10 + t11; s1 = t7 + u1 + u4; s3 = t6 + u2 + u3; s4 = t10 - t11; s5 = t5 + u2 + u4; s7 = t4 + u1 + u3;
-
-// Additional structures for encryption/decryption
-EVP_CIPHER_CTX *en;
-//EVP_CIPHER_CTX en[2];
-unsigned int salt[] = {12345, 54321};
-//unsigned char *key_data = (unsigned char*)"KeyData";
-//int key_data_len = strlen("KeyData");
-// End additional structures
-
 
 static void DCT2D(int32 *p)
 {
@@ -290,27 +256,6 @@ void jpeg_encoder::emit_marker(int marker)
   emit_byte(uint8(0xFF)); emit_byte(uint8(marker));
 }
 
-void jpeg_encoder::emit_comment()
-{
-	//JFIF comment header
-	emit_marker(0xFE);
-
-	const char * comment = get_params().m_picId;
-	int length = strlen(comment) + 2;
-	// comment length (in chars, +2 for size of "length" field)
-
-	emit_byte((unsigned char)(length/256));
-	emit_byte((unsigned char)(length%0xFF));
-	for(int i = 0; i < length-2; i++)  {
-		emit_byte(comment[i]);
-	}
-   	// hardcoded comment ("ABCD")
-//   	emit_byte(0x41);
-//   	emit_byte(0x42);
-//   	emit_byte(0x43);
-//   	emit_byte(0x44);
-}
-
 // Emit JFIF marker
 void jpeg_encoder::emit_jfif_app0()
 {
@@ -325,9 +270,6 @@ void jpeg_encoder::emit_jfif_app0()
   emit_word(1);
   emit_byte(0);      /* No thumbnail image */
   emit_byte(0);
-
-  if(!get_params().m_decode)
-	  emit_comment(); // we only need to write this when creating the image
 }
 
 // Emit quantization tables
@@ -626,55 +568,6 @@ void jpeg_encoder::load_block_16_8_8(int x, int c)
   }
 }
 
-
-/** The following code implements AES crypto through OpenSSL.
- * Based on Saju Pillai's work at:
- http://saju.net.in/code/misc/openssl_aes.c.txt **/
-
-int aes_init(unsigned char *key_data, int key_data_len, unsigned char *salt, EVP_CIPHER_CTX *e_ctx)
-{
-  int i, nrounds = 5;
-  unsigned char key[32], iv[32];
-
-  /*
-   * Gen key & IV for AES 256 CBC mode. A SHA1 digest is used to hash the supplied key material.
-   * nrounds is the number of times the we hash the material. More rounds are more secure but
-   * slower.
-   */
-  i = EVP_BytesToKey(EVP_aes_256_ofb(), EVP_sha1(), salt, key_data, key_data_len, nrounds, key, iv);
-
-  if (i != 32) {
-	  __android_log_print(ANDROID_LOG_ERROR, "Test", "Key size is %d bits - should be 256 bits\n", i);
-    return -1;
-  }
-
-  EVP_CIPHER_CTX_init(e_ctx);
-  EVP_EncryptInit_ex(e_ctx, EVP_aes_256_ofb(), NULL, key, iv);
-//  EVP_CIPHER_CTX_init(d_ctx);
-//  EVP_DecryptInit_ex(d_ctx, EVP_aes_256_ofb(), NULL, key, iv);
-
-  return 0;
-}
-
-unsigned char *aes_encrypt(EVP_CIPHER_CTX *e, unsigned char *plaintext, int *len)
-{
-  /* max ciphertext len for a n bytes of plaintext is n + AES_BLOCK_SIZE -1 bytes */
-  int c_len = *len + AES_BLOCK_SIZE, f_len = 0;
-  unsigned char *ciphertext = (unsigned char*) malloc(c_len);
-  /* allows reusing of 'e' for multiple encryption cycles */
-//  EVP_EncryptInit_ex(e, NULL, NULL, NULL, NULL);
-  /* update ciphertext, c_len is filled with the length of ciphertext generated,
-    *len is the size of plaintext in bytes */
-  EVP_EncryptUpdate(e, ciphertext, &c_len, plaintext, *len);
-
-  /* update ciphertext with the final remaining bytes */
-//  EVP_EncryptFinal_ex(e, ciphertext+c_len, &f_len);
-//  *len = c_len + f_len;
-  return ciphertext;
-}
-
-
-//original function
 void jpeg_encoder::load_quantized_coefficients(int component_num)
 {
   int32 *q = m_quantization_tables[component_num > 0];
@@ -699,110 +592,6 @@ void jpeg_encoder::load_quantized_coefficients(int component_num)
     q++;
   }
 }
-
-
-// modified function including encryption logic.
-// willBeEncoded set to -1 means no encoding, otherwise should hold the index of the
-// corresponding EVP_CIPHER_CTX in en.
-void jpeg_encoder::load_quantized_coefficients_enc(int component_num, int willBeEncoded)
-{
-  int32 *q = m_quantization_tables[component_num > 0];
-  int16 *pDst = m_coefficient_array;
-  bool decode = get_params().m_decode;
-  for (int i = 0; i < 64; i++)
-  {
-    sample_array_t j = m_sample_array[s_zag[i]];
-    if (j < 0)
-    {
-      if ((j = -j + (*q >> 1)) < *q)
-        *pDst = 0;
-      else
-        *pDst = static_cast<int16>(-(j / *q));
-    }
-    else
-    {
-      if ((j = j + (*q >> 1)) < *q)
-        *pDst = 0;
-      else
-        *pDst = static_cast<int16>((j / *q));
-    }
-    *pDst++;
-    *q++;
-  }
-
-  if(!decode && (willBeEncoded != -1)) {
-//	  pDst = m_coefficient_array;
-//	  	  for(int i = 0; i < 64; i++)
-//	  		 *pDst++ = 0;
-	  int howMany = 64;
-	  int skip=0;
-	  pDst = m_coefficient_array+skip;
-  	unsigned char* plaintext = (unsigned char*)malloc(howMany); // 8 msb of each coef, 64 coef, to bytes
-  	unsigned char* ciphertext;
-
-  	int ctr;
-  	int nonZeroCounter = 0;
-  	for(ctr=skip; ctr < howMany; ctr++)  {
-  		if(*pDst != 0) {
-  			plaintext[nonZeroCounter] = (unsigned char)((*pDst)>>3 & 0xFF);
-  			nonZeroCounter++;
-  		}
-  		pDst++;
-  	}
-  	int len = nonZeroCounter;
-  	ciphertext = aes_encrypt(&en[willBeEncoded], plaintext, &len);
-
-//  	__android_log_print(ANDROID_LOG_DEBUG, "Coef", "%d", len);
-  	pDst = m_coefficient_array+skip;
-  	int16 temp;
-  	nonZeroCounter = 0;
-  	for(ctr=skip; ctr < howMany; ctr++)  {
-//  		*pDst = (*pDst & 0xFF00) + ciphertext[ctr]; // replace lsbyte with encrypted
-
-//  		temp = (*pDst & 0xF807) + ((ciphertext[ctr]&0xFF) << 3); //replace msbyte with encrypted
-  		// doing just the above line led to problems with values exceeding +-1023.
-  		// We use sign extension to avoid them.
-
-  		if(*pDst != 0) {
-			temp = (ciphertext[nonZeroCounter]>>7 & 0x1)*0xF800 // sign extension
-					+ ((ciphertext[nonZeroCounter]&0xFF) << 3) // ciphertext byte
-					+ (*pDst & 0x7); // original 3 less significant bits
-
-			// Correction of a few limit cases:
-			if(temp == -1024) {
-				// -1024 is not a valid coefficient.
-				// Since lsb is not part of the ciphertext, we try to stick
-				// close to the original value (1 off).
-				// Assuming evenly distributed lsb and output bytes from encryption,
-				// this means an average loss of 1 least significant bit
-				// for every 2^14b.
-				temp = -1023;
-			}
-				// Our code only encrypts (and decrypts) non-zero coefficients.
-				// In other words: we cannot allow a non-zero coefficient to
-				// become 0 after encryption, since we wouldn't be able to
-				// tell it apart from "original" zeroes.
-				// We are thus reserving 1023 for representing "new" zeroes, that is,
-				// originally non-zero coefficients which, after encryption, have
-				// turned to 0: its original 3 rightmost bits were 0, and the
-				// ciphertext byte it got assigned was 0x00 too.
-			else if (temp == 1023) {
-				// No coefficient should be 1023, we need that!
-				// As above, we stay as close as possible to its initial value.
-				temp = 1022;
-			} else if (temp == 0) {
-				// New zeroes appearing by chance will be converted to 1023.
-				// The decoder will know that these need to be interpreted as 0.
-				temp = 1023;
-			}
-			*pDst = temp;
-			nonZeroCounter++;
-  		}
-  		pDst++;
-  	}
-  }
-}
-
 
 void jpeg_encoder::flush_output_buffer()
 {
@@ -871,7 +660,7 @@ void jpeg_encoder::code_coefficients_pass_two(int component_num)
   int16 *pSrc = m_coefficient_array;
   uint *codes[2];
   uint8 *code_sizes[2];
-  
+
   if (component_num == 0)
   {
     codes[0] = m_huff_codes[0 + 0]; codes[1] = m_huff_codes[2 + 0];
@@ -919,7 +708,6 @@ void jpeg_encoder::code_coefficients_pass_two(int component_num)
       nbits = 1;
       while (temp1 >>= 1)
         nbits++;
-
       j = (run_len << 4) + nbits;
       put_bits(codes[1][j], code_sizes[1][j]);
       put_bits(temp2 & ((1 << nbits) - 1), nbits);
@@ -934,16 +722,6 @@ void jpeg_encoder::code_block(int component_num)
 {
   DCT2D(m_sample_array);
   load_quantized_coefficients(component_num);
-  if (m_pass_num == 1)
-    code_coefficients_pass_one(component_num);
-  else
-    code_coefficients_pass_two(component_num);
-}
-
-void jpeg_encoder::code_block_enc(int component_num, int willBeEncoded)
-{
-  DCT2D(m_sample_array);
-  load_quantized_coefficients_enc(component_num, willBeEncoded);
   if (m_pass_num == 1)
     code_coefficients_pass_one(component_num);
   else
@@ -978,63 +756,9 @@ void jpeg_encoder::process_mcu_row()
   {
     for (int i = 0; i < m_mcus_per_row; i++)
     {
-		  load_block_8_8(i * 2 + 0, 0, 0); code_block(0); load_block_8_8(i * 2 + 1, 0, 0); code_block(0);
-		  load_block_8_8(i * 2 + 0, 1, 0); code_block(0); load_block_8_8(i * 2 + 1, 1, 0); code_block(0);
-		  load_block_16_8(i, 1); code_block(1); load_block_16_8(i, 2); code_block(2);
-    }
-  }
-}
-
-static int should_square_be_encoded(jpge::params params, int row, int col)
-{
-	int ret=-1;
-	int i;
-	for(i = 0; i < params.m_squareNum; i++)  {
-		if(ret == -1
-			&& col >= params.m_horizStart[i]
-			&& col <= params.m_horizEnd[i]
-			&& row >= params.m_vertStart[i]
-			&& row <= params.m_vertEnd[i])
-			ret = i;
-	}
-	return ret;
-}
-
-void jpeg_encoder::process_mcu_row_enc(int currentRow)
-{
-  if (m_num_components == 1)
-  {
-    for (int i = 0; i < m_mcus_per_row; i++)
-    {
-      load_block_8_8_grey(i); code_block(0);
-    }
-  }
-  else if ((m_comp_h_samp[0] == 1) && (m_comp_v_samp[0] == 1))
-  {
-    for (int i = 0; i < m_mcus_per_row; i++)
-    {
-      load_block_8_8(i, 0, 0); code_block(0); load_block_8_8(i, 0, 1); code_block(1); load_block_8_8(i, 0, 2); code_block(2);
-    }
-  }
-  else if ((m_comp_h_samp[0] == 2) && (m_comp_v_samp[0] == 1))
-  {
-    for (int i = 0; i < m_mcus_per_row; i++)
-    {
       load_block_8_8(i * 2 + 0, 0, 0); code_block(0); load_block_8_8(i * 2 + 1, 0, 0); code_block(0);
-      load_block_16_8_8(i, 1); code_block(1); load_block_16_8_8(i, 2); code_block(2);
-    }
-  }
-  else if ((m_comp_h_samp[0] == 2) && (m_comp_v_samp[0] == 2))
-  {
-	  int willBeEncoded;
-    for (int i = 0; i < m_mcus_per_row; i++)
-    {
-    	willBeEncoded = (!get_params().m_decode ? should_square_be_encoded(get_params(), currentRow, i) : -1);
-//    	willBeEncoded = !get_params().m_decode &&
-//    			should_square_be_encoded(get_params(), currentRow, i) > -1;
-		  load_block_8_8(i * 2 + 0, 0, 0); code_block_enc(0, willBeEncoded); load_block_8_8(i * 2 + 1, 0, 0); code_block_enc(0, willBeEncoded);
-		  load_block_8_8(i * 2 + 0, 1, 0); code_block_enc(0, willBeEncoded); load_block_8_8(i * 2 + 1, 1, 0); code_block_enc(0, willBeEncoded);
-		  load_block_16_8(i, 1); code_block_enc(1, willBeEncoded); load_block_16_8(i, 2); code_block_enc(2, willBeEncoded);
+      load_block_8_8(i * 2 + 0, 1, 0); code_block(0); load_block_8_8(i * 2 + 1, 1, 0); code_block(0);
+      load_block_16_8(i, 1); code_block(1); load_block_16_8(i, 2); code_block(2);
     }
   }
 }
@@ -1117,13 +841,8 @@ void jpeg_encoder::load_mcu(const void *pSrc)
 
   if (++m_mcu_y_ofs == m_mcu_y)
   {
-//	  if(!get_params().m_decode && m_rows_processed >= get_params().m_vertStart && m_rows_processed <= get_params().m_vertEnd)  {
-		  process_mcu_row_enc(m_rows_processed);
-//	  }  else  {
-//		  process_mcu_row();
-//	  }
+    process_mcu_row();
     m_mcu_y_ofs = 0;
-    m_rows_processed++;
   }
 }
 
@@ -1150,8 +869,6 @@ bool jpeg_encoder::init(output_stream *pStream, int width, int height, int src_c
   if (((!pStream) || (width < 1) || (height < 1)) || ((src_channels != 1) && (src_channels != 3) && (src_channels != 4)) || (!comp_params.check())) return false;
   m_pStream = pStream;
   m_params = comp_params;
-  m_rows_processed = 0;
-
   return jpg_open(width, height, src_channels);
 }
 
@@ -1233,33 +950,11 @@ public:
 // Writes JPEG image to file.
 bool compress_image_to_jpeg_file(const char *pFilename, int width, int height, int num_channels, const uint8 *pImage_data, const params &comp_params)
 {
-	
   cfile_stream dst_stream;
   if (!dst_stream.open(pFilename))
     return false;
 
   jpge::jpeg_encoder dst_image;
-  int i;
-  int sum = 0;
-  for(i=0; i < strlen(comp_params.m_picId); i++)  {
-	  sum += (int)(comp_params.m_picId[i]);
-  }
-
-  salt[0] = (unsigned int)(sum & 0xFF);
-  salt[1] = (unsigned int)((sum >> 8) & 0xFF);
-
-  //  salt[0] = (unsigned int)comp_params.m_picId;
-  //  salt[1] = (unsigned int)(comp_params.m_picId + 1);
-
-  en = (EVP_CIPHER_CTX*) malloc((comp_params.m_squareNum)*sizeof(EVP_CIPHER_CTX));
-  for(i=0; i<comp_params.m_squareNum; i++)  {
-	  aes_init(comp_params.m_keys[i], strlen((char const*)(comp_params.m_keys[i])), (unsigned char*)salt, &en[i]);
-  }
-
-//  if(aes_init(key_data, key_data_len, (unsigned char *)&salt, &en))
-//	  return false;
-
-
   if (!dst_image.init(&dst_stream, width, height, num_channels, comp_params))
     return false;
 
@@ -1275,8 +970,8 @@ bool compress_image_to_jpeg_file(const char *pFilename, int width, int height, i
        return false;
   }
 
-  for(i = 0; i < comp_params.m_squareNum; i++)
-	  EVP_CIPHER_CTX_cleanup(&en[i]);
+  dst_image.deinit();
+
   return dst_stream.close();
 }
 
@@ -1339,4 +1034,5 @@ bool compress_image_to_jpeg_file_in_memory(void *pDstBuf, int &buf_size, int wid
    buf_size = dst_stream.get_size();
    return true;
 }
+
 } // namespace jpge

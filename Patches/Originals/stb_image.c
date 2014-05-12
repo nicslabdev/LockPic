@@ -61,33 +61,274 @@
 
 */
 
-// Modifications for the LockPic project:
-// Copyright (C) 2014  Carlos Parés: carlosparespulido (at) gmail (dot) com
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-#include <android/log.h>
-#include <openssl/evp.h>
-#include <openssl/aes.h>
-
 #ifndef STBI_INCLUDE_STB_IMAGE_H
 #define STBI_INCLUDE_STB_IMAGE_H
 
 // To get a header file for this, either cut and paste the header,
 // or create stb_image.h, #define STBI_HEADER_FILE_ONLY, and
 // then include stb_image.c from it.
-#include "stb_image.h"
 
+////   begin header file  ////////////////////////////////////////////////////
+//
+// Limitations:
+//    - no jpeg progressive support
+//    - non-HDR formats support 8-bit samples only (jpeg, png)
+//    - no delayed line count (jpeg) -- IJG doesn't support either
+//    - no 1-bit BMP
+//    - GIF always returns *comp=4
+//
+// Basic usage (see HDR discussion below):
+//    int x,y,n;
+//    unsigned char *data = stbi_load(filename, &x, &y, &n, 0);
+//    // ... process data if not NULL ... 
+//    // ... x = width, y = height, n = # 8-bit components per pixel ...
+//    // ... replace '0' with '1'..'4' to force that many components per pixel
+//    // ... but 'n' will always be the number that it would have been if you said 0
+//    stbi_image_free(data)
+//
+// Standard parameters:
+//    int *x       -- outputs image width in pixels
+//    int *y       -- outputs image height in pixels
+//    int *comp    -- outputs # of image components in image file
+//    int req_comp -- if non-zero, # of image components requested in result
+//
+// The return value from an image loader is an 'unsigned char *' which points
+// to the pixel data. The pixel data consists of *y scanlines of *x pixels,
+// with each pixel consisting of N interleaved 8-bit components; the first
+// pixel pointed to is top-left-most in the image. There is no padding between
+// image scanlines or between pixels, regardless of format. The number of
+// components N is 'req_comp' if req_comp is non-zero, or *comp otherwise.
+// If req_comp is non-zero, *comp has the number of components that _would_
+// have been output otherwise. E.g. if you set req_comp to 4, you will always
+// get RGBA output, but you can check *comp to easily see if it's opaque.
+//
+// An output image with N components has the following components interleaved
+// in this order in each pixel:
+//
+//     N=#comp     components
+//       1           grey
+//       2           grey, alpha
+//       3           red, green, blue
+//       4           red, green, blue, alpha
+//
+// If image loading fails for any reason, the return value will be NULL,
+// and *x, *y, *comp will be unchanged. The function stbi_failure_reason()
+// can be queried for an extremely brief, end-user unfriendly explanation
+// of why the load failed. Define STBI_NO_FAILURE_STRINGS to avoid
+// compiling these strings at all, and STBI_FAILURE_USERMSG to get slightly
+// more user-friendly ones.
+//
+// Paletted PNG, BMP, GIF, and PIC images are automatically depalettized.
+//
+// ===========================================================================
+//
+// iPhone PNG support:
+//
+// By default we convert iphone-formatted PNGs back to RGB; nominally they
+// would silently load as BGR, except the existing code should have just
+// failed on such iPhone PNGs. But you can disable this conversion by
+// by calling stbi_convert_iphone_png_to_rgb(0), in which case
+// you will always just get the native iphone "format" through.
+//
+// Call stbi_set_unpremultiply_on_load(1) as well to force a divide per
+// pixel to remove any premultiplied alpha *only* if the image file explicitly
+// says there's premultiplied data (currently only happens in iPhone images,
+// and only if iPhone convert-to-rgb processing is on).
+//
+// ===========================================================================
+//
+// HDR image support   (disable by defining STBI_NO_HDR)
+//
+// stb_image now supports loading HDR images in general, and currently
+// the Radiance .HDR file format, although the support is provided
+// generically. You can still load any file through the existing interface;
+// if you attempt to load an HDR file, it will be automatically remapped to
+// LDR, assuming gamma 2.2 and an arbitrary scale factor defaulting to 1;
+// both of these constants can be reconfigured through this interface:
+//
+//     stbi_hdr_to_ldr_gamma(2.2f);
+//     stbi_hdr_to_ldr_scale(1.0f);
+//
+// (note, do not use _inverse_ constants; stbi_image will invert them
+// appropriately).
+//
+// Additionally, there is a new, parallel interface for loading files as
+// (linear) floats to preserve the full dynamic range:
+//
+//    float *data = stbi_loadf(filename, &x, &y, &n, 0);
+// 
+// If you load LDR images through this interface, those images will
+// be promoted to floating point values, run through the inverse of
+// constants corresponding to the above:
+//
+//     stbi_ldr_to_hdr_scale(1.0f);
+//     stbi_ldr_to_hdr_gamma(2.2f);
+//
+// Finally, given a filename (or an open file or memory block--see header
+// file for details) containing image data, you can query for the "most
+// appropriate" interface to use (that is, whether the image is HDR or
+// not), using:
+//
+//     stbi_is_hdr(char *filename);
+//
+// ===========================================================================
+//
+// I/O callbacks
+//
+// I/O callbacks allow you to read from arbitrary sources, like packaged
+// files or some other source. Data read from callbacks are processed
+// through a small internal buffer (currently 128 bytes) to try to reduce
+// overhead. 
+//
+// The three functions you must define are "read" (reads some bytes of data),
+// "skip" (skips some bytes of data), "eof" (reports if the stream is at the end).
+
+
+#ifndef STBI_NO_STDIO
+
+#if defined(_MSC_VER) && _MSC_VER >= 0x1400
+#define _CRT_SECURE_NO_WARNINGS // suppress bogus warnings about fopen()
+#endif
+
+#include <stdio.h>
+#endif
+
+#define STBI_VERSION 1
+
+enum
+{
+   STBI_default = 0, // only used for req_comp
+
+   STBI_grey       = 1,
+   STBI_grey_alpha = 2,
+   STBI_rgb        = 3,
+   STBI_rgb_alpha  = 4
+};
+
+typedef unsigned char stbi_uc;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+//
+// PRIMARY API - works on images of any type
+//
+
+//
+// load image by filename, open file, or memory buffer
+//
+
+extern stbi_uc *stbi_load_from_memory(stbi_uc const *buffer, int len, int *x, int *y, int *comp, int req_comp);
+
+#ifndef STBI_NO_STDIO
+extern stbi_uc *stbi_load            (char const *filename,     int *x, int *y, int *comp, int req_comp);
+extern stbi_uc *stbi_load_from_file  (FILE *f,                  int *x, int *y, int *comp, int req_comp);
+// for stbi_load_from_file, file pointer is left pointing immediately after image
+#endif
+
+typedef struct
+{
+   int      (*read)  (void *user,char *data,int size);   // fill 'data' with 'size' bytes.  return number of bytes actually read 
+   void     (*skip)  (void *user,unsigned n);            // skip the next 'n' bytes
+   int      (*eof)   (void *user);                       // returns nonzero if we are at end of file/data
+} stbi_io_callbacks;
+
+extern stbi_uc *stbi_load_from_callbacks  (stbi_io_callbacks const *clbk, void *user, int *x, int *y, int *comp, int req_comp);
+
+#ifndef STBI_NO_HDR
+   extern float *stbi_loadf_from_memory(stbi_uc const *buffer, int len, int *x, int *y, int *comp, int req_comp);
+
+   #ifndef STBI_NO_STDIO
+   extern float *stbi_loadf            (char const *filename,   int *x, int *y, int *comp, int req_comp);
+   extern float *stbi_loadf_from_file  (FILE *f,                int *x, int *y, int *comp, int req_comp);
+   #endif
+   
+   extern float *stbi_loadf_from_callbacks  (stbi_io_callbacks const *clbk, void *user, int *x, int *y, int *comp, int req_comp);
+
+   extern void   stbi_hdr_to_ldr_gamma(float gamma);
+   extern void   stbi_hdr_to_ldr_scale(float scale);
+
+   extern void   stbi_ldr_to_hdr_gamma(float gamma);
+   extern void   stbi_ldr_to_hdr_scale(float scale);
+#endif // STBI_NO_HDR
+
+// stbi_is_hdr is always defined
+extern int    stbi_is_hdr_from_callbacks(stbi_io_callbacks const *clbk, void *user);
+extern int    stbi_is_hdr_from_memory(stbi_uc const *buffer, int len);
+#ifndef STBI_NO_STDIO
+extern int      stbi_is_hdr          (char const *filename);
+extern int      stbi_is_hdr_from_file(FILE *f);
+#endif // STBI_NO_STDIO
+
+
+// get a VERY brief reason for failure
+// NOT THREADSAFE
+extern const char *stbi_failure_reason  (void); 
+
+// free the loaded image -- this is just free()
+extern void     stbi_image_free      (void *retval_from_stbi_load);
+
+// get image dimensions & components without fully decoding
+extern int      stbi_info_from_memory(stbi_uc const *buffer, int len, int *x, int *y, int *comp);
+extern int      stbi_info_from_callbacks(stbi_io_callbacks const *clbk, void *user, int *x, int *y, int *comp);
+
+#ifndef STBI_NO_STDIO
+extern int      stbi_info            (char const *filename,     int *x, int *y, int *comp);
+extern int      stbi_info_from_file  (FILE *f,                  int *x, int *y, int *comp);
+
+#endif
+
+
+
+// for image formats that explicitly notate that they have premultiplied alpha,
+// we just return the colors as stored in the file. set this flag to force
+// unpremultiplication. results are undefined if the unpremultiply overflow.
+extern void stbi_set_unpremultiply_on_load(int flag_true_if_should_unpremultiply);
+
+// indicate whether we should process iphone images back to canonical format,
+// or just pass them through "as-is"
+extern void stbi_convert_iphone_png_to_rgb(int flag_true_if_should_convert);
+
+
+// ZLIB client - used by PNG, available for other purposes
+
+extern char *stbi_zlib_decode_malloc_guesssize(const char *buffer, int len, int initial_size, int *outlen);
+extern char *stbi_zlib_decode_malloc(const char *buffer, int len, int *outlen);
+extern int   stbi_zlib_decode_buffer(char *obuffer, int olen, const char *ibuffer, int ilen);
+
+extern char *stbi_zlib_decode_noheader_malloc(const char *buffer, int len, int *outlen);
+extern int   stbi_zlib_decode_noheader_buffer(char *obuffer, int olen, const char *ibuffer, int ilen);
+
+
+// define faster low-level operations (typically SIMD support)
+#ifdef STBI_SIMD
+typedef void (*stbi_idct_8x8)(stbi_uc *out, int out_stride, short data[64], unsigned short *dequantize);
+// compute an integer IDCT on "input"
+//     input[x] = data[x] * dequantize[x]
+//     write results to 'out': 64 samples, each run of 8 spaced by 'out_stride'
+//                             CLAMP results to 0..255
+typedef void (*stbi_YCbCr_to_RGB_run)(stbi_uc *output, stbi_uc const  *y, stbi_uc const *cb, stbi_uc const *cr, int count, int step);
+// compute a conversion from YCbCr to RGB
+//     'count' pixels
+//     write pixels to 'output'; each pixel is 'step' bytes (either 3 or 4; if 4, write '255' as 4th), order R,G,B
+//     y: Y input channel
+//     cb: Cb input channel; scale/biased to be 0..255
+//     cr: Cr input channel; scale/biased to be 0..255
+
+extern void stbi_install_idct(stbi_idct_8x8 func);
+extern void stbi_install_YCbCr_to_RGB(stbi_YCbCr_to_RGB_run func);
+#endif // STBI_SIMD
+
+
+#ifdef __cplusplus
+}
+#endif
+
+//
+//
+////   end header file   /////////////////////////////////////////////////////
 #endif // STBI_INCLUDE_STB_IMAGE_H
 
 #ifndef STBI_HEADER_FILE_ONLY
@@ -163,28 +404,7 @@ typedef struct
 
    uint8 *img_buffer, *img_buffer_end;
    uint8 *img_buffer_original;
-   
-   int decode;
-   int squareNum;
-   int *horizStart, *horizEnd, *vertStart, *vertEnd;
 } stbi;
-
-static int should_square_be_decoded(stbi *s, int x, int y)
-{
-	int i;
-	int ret = -1;
-	for(i=0; i<s->squareNum; i++)  {
-		if( ret == -1
-			&& x >= s->horizStart[i]
-		    && x <= s->horizEnd[i]
-			&& y >= s->vertStart[i]
-			&& y <= s->vertEnd[i] )
-			ret = i;
-	}
-//	return (ret == -1 ? -1 : 0);
-	return ret;
-//	return 0;
-}
 
 
 static void refill_buffer(stbi *s);
@@ -350,115 +570,6 @@ unsigned char *stbi_load_from_file(FILE *f, int *x, int *y, int *comp, int req_c
    start_file(&s,f);
    return stbi_load_main(&s,x,y,comp,req_comp);
 }
-
-// Additional structures for encryption/decryption
-EVP_CIPHER_CTX *de;
-unsigned int salt[] = {12345, 54321};
-//unsigned char *m_key_data = (unsigned char*)"KeyData";
-//int m_key_data_len = 7;
-// End additional structures
-
-
-/** The following code implements AES crypto through OpenSSL.
- * Based on Saju Pillai's work at:
- http://saju.net.in/code/misc/openssl_aes.c.txt **/
-
-int aes_init(unsigned char *key_data, int key_data_len, unsigned char *salt, EVP_CIPHER_CTX *d_ctx)
-{
-  int i, nrounds = 5;
-  unsigned char key[32], iv[32];
-  /*
-   * Gen key & IV for AES 256 CBC mode. A SHA1 digest is used to hash the supplied key material.
-   * nrounds is the number of times the we hash the material. More rounds are more secure but
-   * slower.
-   */
-  i = EVP_BytesToKey(EVP_aes_256_ofb(), EVP_sha1(), salt, key_data, key_data_len, nrounds, key, iv);
-
-  if (i != 32) {
-	  __android_log_print(ANDROID_LOG_ERROR, "Test", "Key size is %d bits - should be 256 bits\n", i);
-    return -1;
-  }
-
-//  EVP_CIPHER_CTX_init(e_ctx);
-//  EVP_EncryptInit_ex(e_ctx, EVP_aes_256_ofb(), NULL, key, iv);
-  EVP_CIPHER_CTX_init(d_ctx);
-  EVP_DecryptInit_ex(d_ctx, EVP_aes_256_ofb(), NULL, key, iv);
-
-  return 0;
-}
-
-//unsigned char *aes_encrypt(EVP_CIPHER_CTX *e, unsigned char *plaintext, int *len)
-//{
-//  /* max ciphertext len for a n bytes of plaintext is n + AES_BLOCK_SIZE -1 bytes */
-//  int c_len = *len + AES_BLOCK_SIZE, f_len = 0;
-//  unsigned char *ciphertext = (unsigned char*) malloc(c_len);
-//  /* allows reusing of 'e' for multiple encryption cycles */
-////  EVP_EncryptInit_ex(e, NULL, NULL, NULL, NULL);
-//  /* update ciphertext, c_len is filled with the length of ciphertext generated,
-//    *len is the size of plaintext in bytes */
-//  EVP_EncryptUpdate(e, ciphertext, &c_len, plaintext, *len);
-//
-//  /* update ciphertext with the final remaining bytes */
-////  EVP_EncryptFinal_ex(e, ciphertext+c_len, &f_len);
-//  *len = c_len + f_len;
-//  return ciphertext;
-//}
-
-unsigned char *aes_decrypt(EVP_CIPHER_CTX *e, unsigned char *ciphertext, int *len)
-{
-  /* because we have padding ON, we must allocate an extra cipher block size of memory */
-  int p_len = *len, f_len = 0;
-  unsigned char *plaintext = (unsigned char*)malloc(p_len + AES_BLOCK_SIZE);
-
-//  EVP_DecryptInit_ex(e, NULL, NULL, NULL, NULL);
-  EVP_DecryptUpdate(e, plaintext, &p_len, ciphertext, *len);
-//  EVP_DecryptFinal_ex(e, plaintext+p_len, &f_len);
-
-  *len = p_len + f_len;
-  return plaintext;
-}
-
-unsigned char *stbi_load_dec(int decode, char const *filename, int *x, int *y, int *comp, int req_comp, int squareNum, int *horizStart, int *horizEnd, int *vertStart, int *vertEnd, unsigned char **keys, char const * pic_id)
-{
-   FILE *f = fopen(filename, "rb");
-   unsigned char *result;
-   if (!f) return epuc("can't fopen", "Unable to open file");
-   stbi s;
-
-//   salt[0] = (unsigned int *)pic_id;
-//   salt[1] = (unsigned int *)(pic_id + 1);
-   de = (EVP_CIPHER_CTX*) malloc((squareNum)*sizeof(EVP_CIPHER_CTX));
-   int i;
-   int sum = 0;
-     for(i=0; i < strlen(pic_id); i++)  {
-   	  sum += (int)(pic_id[i]);
-     }
-     salt[0] = (unsigned int)(sum & 0xFF);
-     salt[1] = (unsigned int)((sum >> 8) & 0xFF);
-
-     for(i=0; i<squareNum; i++)  {
-//   	  aes_init(keys[i], strlen((char const*)(keys[i])), (unsigned char *)&salt, &(de[i]));
-   	  aes_init(keys[i], strlen((char const*)(keys[i])), (unsigned char *)&salt, &de[i]);
-     }
-//   if(aes_init(key_data, key_data_len, (unsigned char *)&salt, &en, &de))
-//   	  return NULL;
-
-
-   start_file(&s,f);
-   s.decode = decode;
-   s.squareNum = squareNum;
-   s.horizStart = horizStart;
-   s.horizEnd = horizEnd;
-   s.vertStart = vertStart;
-   s.vertEnd = vertEnd;
-   result = stbi_load_main(&s,x,y,comp,req_comp);
-
-   for(i = 0; i < squareNum; i++)
-   	  EVP_CIPHER_CTX_cleanup(&de[i]);
-   fclose(f);
-   return result;
-}
-
 #endif //!STBI_NO_STDIO
 
 unsigned char *stbi_load_from_memory(stbi_uc const *buffer, int len, int *x, int *y, int *comp, int req_comp)
@@ -955,6 +1066,7 @@ stbi_inline static int decode(jpeg *j, huffman *h)
 {
    unsigned int temp;
    int c,k;
+
    if (j->code_bits < 16) grow_buffer_unsafe(j);
 
    // look at the top FAST_BITS and determine what symbol ID it is,
@@ -1044,77 +1156,6 @@ static uint8 dezigzag[64+15] =
 };
 
 // decode one 64-entry block--
-//static int decode_block(jpeg *j, short data[64], huffman *hdc, huffman *hac, int b)
-//{
-//   int diff,dc,k;
-//   int t = decode(j, hdc);
-//   if (t < 0) return e("bad huffman code","Corrupt JPEG");
-//
-//   // 0 all the ac values now so we can do it 32-bits at a time
-//   memset(data,0,64*sizeof(data[0]));
-//
-//   diff = t ? extend_receive(j, t) : 0;
-//   dc = j->img_comp[b].dc_pred + diff;
-//   j->img_comp[b].dc_pred = dc;
-//   data[0] = (short) dc;
-//
-//   // decode AC components, see JPEG spec
-//   if(!j->s->decode)  { // normal JPEG encoding
-//	   k = 1;
-//	      do {
-//	         int r,s;
-//	         int rs = decode(j, hac);
-//	         if (rs < 0) return e("bad huffman code","Corrupt JPEG");
-//	         s = rs & 15;
-//	         r = rs >> 4;
-//	         if (s == 0) {
-//	            if (rs != 0xf0) break; // end block
-//	            k += 16;
-//	         } else {
-//	            k += r;
-//	            // decode into unzigzag'd location
-//	           	data[dezigzag[k++]] = (short) extend_receive(j,s);
-//	         }
-//	      } while (k < 64);
-//   }  else  {  // AES decryption
-//	   k = 1;
-//	      do {
-//	         int r,s;
-//	         int rs = decode(j, hac);
-//	         if (rs < 0) return e("bad huffman code","Corrupt JPEG");
-//	         s = rs & 15;
-//	         r = rs >> 4;
-//	         if (s == 0) {
-//	            if (rs != 0xf0) break; // end block
-//	            k += 16;
-//	         } else {
-//	            k += r;
-//	           	 data[k++] = (short) extend_receive(j,s);
-//	         }
-//	      } while (k < 64);
-//
-//	      unsigned char* ciphertext = (unsigned char *)malloc(64);
-//	      	   int ctr;
-//	      	     	for(ctr=0; ctr < 64; ctr++)  {
-//	      	     		ciphertext[ctr] = (unsigned char)(data[ctr]);
-//	      	     	}
-//
-//	      	     	unsigned char* plaintext = (unsigned char *)malloc(64);
-//	      	     	int len = 64;
-//	      	     	plaintext = (unsigned char *)aes_decrypt(&de, ciphertext, &len);
-//
-//	      	     	short auxData[64];
-//	      	     	for(ctr=0; ctr<63; ctr++)
-//	      	     		auxData[ctr] = data[ctr];
-//
-//	      	     	for(ctr=0; ctr < 63; ctr++)  {
-//	      	     		data[dezigzag[ctr]] = (auxData[ctr] & 0xFF00) + plaintext[ctr]; // replace lsbyte with decrypted
-//	      	     	}
-//	      	     	data[63] = 0;
-//   }
-//   return 1;
-//}
-
 static int decode_block(jpeg *j, short data[64], huffman *hdc, huffman *hac, int b)
 {
    int diff,dc,k;
@@ -1129,157 +1170,25 @@ static int decode_block(jpeg *j, short data[64], huffman *hdc, huffman *hac, int
    j->img_comp[b].dc_pred = dc;
    data[0] = (short) dc;
 
-// decode AC components, see JPEG spec
+   // decode AC components, see JPEG spec
    k = 1;
-	  do {
-		 int r,s;
-		 int rs = decode(j, hac);
-		 if (rs < 0) return e("bad huffman code","Corrupt JPEG");
-		 s = rs & 15;
-		 r = rs >> 4;
-		 if (s == 0) {
-			if (rs != 0xf0) break; // end block
-			k += 16;
-		 } else {
-			k += r;
-			// decode into unzigzag'd location
-			data[dezigzag[k++]] = (short) extend_receive(j,s);
-		 }
-	  } while (k < 64);
-
+   do {
+      int r,s;
+      int rs = decode(j, hac);
+      if (rs < 0) return e("bad huffman code","Corrupt JPEG");
+      s = rs & 15;
+      r = rs >> 4;
+      if (s == 0) {
+         if (rs != 0xf0) break; // end block
+         k += 16;
+      } else {
+         k += r;
+         // decode into unzigzag'd location
+         data[dezigzag[k++]] = (short) extend_receive(j,s);
+      }
+   } while (k < 64);
    return 1;
 }
-
-static int decode_block_dec(jpeg *j, short data[64], huffman *hdc, huffman *hac, int b, EVP_CIPHER_CTX *decoder)
-{
-   int diff,dc,k;
-   int t = decode(j, hdc);
-   if (t < 0) return e("bad huffman code","Corrupt JPEG");
-
-   // 0 all the ac values now so we can do it 32-bits at a time
-   memset(data,0,64*sizeof(data[0]));
-
-   diff = t ? extend_receive(j, t) : 0;
-   dc = j->img_comp[b].dc_pred + diff;
-   j->img_comp[b].dc_pred = dc;
-   data[0] = (short) dc;
-
-   // AES decryption
-	   k = 1;
-	  do {
-		 int r,s;
-		 int rs = decode(j, hac);
-		 if (rs < 0) return e("bad huffman code","Corrupt JPEG");
-		 s = rs & 15;
-		 r = rs >> 4;
-		 if (s == 0) {
-			if (rs != 0xf0) break; // end block
-			k += 16;
-		 } else {
-			k += r;
-			 data[k++] = (short) extend_receive(j,s);
-		 }
-	  } while (k < 64);
-
-
-	    unsigned char* ciphertext = (unsigned char *)malloc(64);
-	    int ctr;
-	    int nonZeroCounter = 0;
-		for(ctr=0; ctr < 64; ctr++)  {
-			if(data[ctr] != 0)
-			{
-				if(data[ctr] == 1023)
-					ciphertext[nonZeroCounter] = 0;
-				else
-					ciphertext[nonZeroCounter] = (unsigned char)((data[ctr]>>3));
-				nonZeroCounter++;
-			}
-		}
-
-		unsigned char* plaintext = (unsigned char *)malloc(64);
-		int len = nonZeroCounter;
-		plaintext = (unsigned char *)aes_decrypt(decoder, ciphertext, &len);
-
-		short auxData[64];
-		for(ctr=0; ctr<64; ctr++)
-			auxData[ctr] = data[ctr];
-
-		nonZeroCounter = 0;
-		for(ctr=0; ctr < 64; ctr++)  {
-			if(auxData[ctr] == 0) {
-				data[dezigzag[ctr]] = 0;
-			} else {
-			data[dezigzag[ctr]] = (auxData[ctr] & 0x7) + // 3 lsb
-					((plaintext[nonZeroCounter]&0xFF)<<3) // replace msbyte with decrypted
-					+ ((plaintext[nonZeroCounter]>>7 & 0x1)*0xF800); // plus sign extension
-			nonZeroCounter++;
-			}
-		}
-		return 1;
-}
-
-//static int decode_block_dec(jpeg *j, short data[64], huffman *hdc, huffman *hac, int b)
-//{
-//   int diff,dc,k;
-//   int t = decode(j, hdc);
-//   if (t < 0) return e("bad huffman code","Corrupt JPEG");
-//
-//   short auxData[64];
-//   // 0 all the ac values now so we can do it 32-bits at a time
-//   memset(auxData,0,64*sizeof(data[0]));
-//   memset(data, 0, 64*sizeof(data[0]));
-//
-//   diff = t ? extend_receive(j, t) : 0;
-//   dc = j->img_comp[b].dc_pred + diff;
-//   j->img_comp[b].dc_pred = dc;
-//   auxData[0] = (short) dc;
-//
-//   // AES decryption
-//	   k = 1;
-//	  do {
-//		 int r,s;
-//		 int rs = decode(j, hac);
-//		 if (rs < 0) return e("bad huffman code","Corrupt JPEG");
-//		 s = rs & 15;
-//		 r = rs >> 4;
-//		 if (s == 0) {
-//			if (rs != 0xf0) break; // end block
-//			k += 16;
-//		 } else {
-//			k += r;
-//			 auxData[k++] = (short) extend_receive(j,s);
-//		 }
-//	  } while (k < 64);
-//
-//
-//	    unsigned char* ciphertext = (unsigned char *)malloc(64);
-//	    int ctr;
-//	    int nonZeroCounter = 0;
-//		for(ctr=0; ctr < 64; ctr++)  {
-//			if(auxData[ctr] != 0)
-//			{
-//				if(auxData[ctr] == 1023)
-//					ciphertext[nonZeroCounter] = 0;
-//				else
-//					ciphertext[nonZeroCounter] = (unsigned char)((auxData[ctr]>>3));
-//				nonZeroCounter++;
-//			}
-//		}
-//
-//		unsigned char* plaintext = (unsigned char *)malloc(64);
-//		int len = nonZeroCounter;
-//		plaintext = (unsigned char *)aes_decrypt(&de, ciphertext, &len);
-//
-//		nonZeroCounter = 0;
-//		for(ctr=0; ctr < 64; ctr++)  {
-//			if(auxData[ctr] != 0) { // zeroes already in their place (memset)
-//				data[dezigzag[ctr]] = (auxData[ctr] & 0x7) + ((plaintext[nonZeroCounter]&0xFF)<<3) // replace msbyte with decrypted
-//									+ ((plaintext[nonZeroCounter]>>7 & 0x1)*0xF800); // plus sign extension
-//				nonZeroCounter++;
-//			}
-//		}
-//		return 1;
-//}
 
 // take a -128..127 value and clamp it and convert to 0..255
 stbi_inline static uint8 clamp(int x)
@@ -1459,7 +1368,6 @@ static int parse_entropy_coded_data(jpeg *z)
       // component has, independent of interleaved MCU blocking and such
       int w = (z->img_comp[n].x+7) >> 3;
       int h = (z->img_comp[n].y+7) >> 3;
-
       for (j=0; j < h; ++j) {
          for (i=0; i < w; ++i) {
             if (!decode_block(z, data, z->huff_dc+z->img_comp[n].hd, z->huff_ac+z->img_comp[n].ha, n)) return 0;
@@ -1492,34 +1400,12 @@ static int parse_entropy_coded_data(jpeg *z)
                   for (x=0; x < z->img_comp[n].h; ++x) {
                      int x2 = (i*z->img_comp[n].h + x)*8;
                      int y2 = (j*z->img_comp[n].v + y)*8;
-
-                     // {horiz|vert}{Start|End} are the coordinates in 8x8 blocks.
-                     // Cb and Cr components will have to be downsampled to 16x16.
-
-                     int willBeDecoded = (z->s->decode ?
-                    		 	 	 	 	 should_square_be_decoded(
-												   z->s,
-												   x2/(8*z->img_comp[n].h),
-												   y2/(8*z->img_comp[n].v) )
-										   : -1);
-                     if(willBeDecoded != -1)
-                     {
-						 if (!decode_block_dec(z, data, z->huff_dc+z->img_comp[n].hd, z->huff_ac+z->img_comp[n].ha, n, &de[willBeDecoded])) return 0;
-						 #ifdef STBI_SIMD
-						 stbi_idct_installed(z->img_comp[n].data+z->img_comp[n].w2*y2+x2, z->img_comp[n].w2, data, z->dequant2[z->img_comp[n].tq]);
-						 #else
-						 idct_block(z->img_comp[n].data+z->img_comp[n].w2*y2+x2, z->img_comp[n].w2, data, z->dequant[z->img_comp[n].tq]);
-						 #endif
-                     }
-                     else
-                     {
-                    	 if (!decode_block(z, data, z->huff_dc+z->img_comp[n].hd, z->huff_ac+z->img_comp[n].ha, n)) return 0;
-						 #ifdef STBI_SIMD
-						 stbi_idct_installed(z->img_comp[n].data+z->img_comp[n].w2*y2+x2, z->img_comp[n].w2, data, z->dequant2[z->img_comp[n].tq]);
-						 #else
-						 idct_block(z->img_comp[n].data+z->img_comp[n].w2*y2+x2, z->img_comp[n].w2, data, z->dequant[z->img_comp[n].tq]);
-						 #endif
-                     }
+                     if (!decode_block(z, data, z->huff_dc+z->img_comp[n].hd, z->huff_ac+z->img_comp[n].ha, n)) return 0;
+                     #ifdef STBI_SIMD
+                     stbi_idct_installed(z->img_comp[n].data+z->img_comp[n].w2*y2+x2, z->img_comp[n].w2, data, z->dequant2[z->img_comp[n].tq]);
+                     #else
+                     idct_block(z->img_comp[n].data+z->img_comp[n].w2*y2+x2, z->img_comp[n].w2, data, z->dequant[z->img_comp[n].tq]);
+                     #endif
                   }
                }
             }
