@@ -20,3 +20,4 @@ These files (pdf with images, and plaintext) contain instructions to build the c
 The remaining files and folders are the code (Java side at /src, C side at /jni), libraries, and compiled binaries.
 
 This project is protected by GNU General Public License v3.0.
+Contact me at carlosparespulido (at) gmail (dot) com.
