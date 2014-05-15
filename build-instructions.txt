@@ -1,0 +1,67 @@
+This document assumes an Eclipse version with the Android Development 
+plugin (SDK) already installed, which can be obtained from here:
+http://developer.android.com/tools/sdk/eclipse-adt.html; and also
+Android's Native Development Kit (NDK), which can be obtained here:
+https://developer.android.com/tools/sdk/ndk/index.html
+
+The application code is easy to compile, once the tools are installed. It
+has to be imported to the workspace as an Android project (otherwise, the
+necessary libraries have to be manually referenced). That option is found
+in File > Import, selecting the option Android/Existing Android code into
+workspace.
+
+To run the code on an emulator, we need to previously create its prole:
+Window > Android Virtual Device Manager, select New, and choose the
+features.
+
+Once the prole is set up, compiling the code will automatically run it
+on the emulator.
+
+Compiling the code for a real device is also easy, but it requires some
+previous steps.
+
+First, the device must be enabled for application debugging. That option
+is found in Settings > Developer options (or, in Android versions pre-3.2,
+Settings > Applications > Developers), and enable USB debugging.
+
+Note: in recent versions of Android (4.2 and ahead), the Developer options
+menu is hidden by default. To show it, go to Settings > Device information, 
+and tap seven times on the Build number field.
+
+If everything went well, in a command line window, from the path where
+the Android SDK is installed, enter the folder platform-tools, and run adb
+devices. In the displayed list, the device should appear as device and an
+identifier.
+
+In case it does not show, it may be necessary to install the drivers for the
+specific device, available from the website of the manufacturer.
+
+Once these steps are done, pressing the Run button in Eclipse, with the
+device plugged in, will show a selector allowing to run the code in the phone.
+Note: If the code fails to run due to "not nding a compatible target",
+change in the file AndroidManifest.xml, the line
+android:targetSdkVersion="17" to the version the phone uses. Still, we
+remind that the application relies on features of Android 14, so it will not
+work on devices previous to 4.0.
+
+Compiling the native side of the code is a bit more complex, as this feature
+is not yet integrated with Eclipse.
+
+The Java side uses the native code as a precompiled binary le. This
+means that, as long as the C part remains unmodied, it is not necessary to
+recompile it to run the project.
+
+The Android native code compiler uses a syntax similar to Makefile's; the
+compilation directives are, inside the project, in the path jni/Android.mk.
+This file should not be modied unless more native code packages were ne-
+cessary.
+
+From the command line, launch the ndk-build program, available in the NDK 
+install folder, from the main directory of the project.
+
+This generates again the binary files, which are automatically created in
+the format required by the Java side.
+Note: for some OSs (especially older versions of Windows) the compilation
+from the default command line may provoke some issues. In that case, we
+recommend using a Linux-style command window, such as Cygwin (available
+here: http://www.cygwin.com/).
