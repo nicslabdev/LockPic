@@ -1,0 +1,45 @@
+What is LockPic?
+LockPic is a simple application which allows you to maintain a tighter control on your images, even if you upload them to the Internet.
+With LockPic, you can “lock” parts of an image, so that the only ones who can see them are those you want to. At any moment, you can give permission to more people – or revoke it, as you see fit! 
+With LockPic, for instance, you can upload your holiday pictures, without spreading the faces of your children – but allowing other family members to see the complete picture!
+This lock is achieved through cryptography. This means that your original image is stored wherever you put it – and not a single place else.
+For others to be able to see your locked images, they need to open it with LockPic. Both encrypting and decrypting require connecting to the Internet, as the master server must be queried.
+Please note that, as of now, LockPic is not compatible with some social networks – i.e. if you upload your locked pictures to Facebook or Twitter, others may not be able to decode them! Please see the Note on social networks below.
+
+How to use LockPic
+The main menu, shown to the user, from where all actions can be performed, is the following:
+ 
+Encryption of an image
+Choose the Encrypt button in the main menu. Your device’s image gallery will be displayed; choose the picture on which encryption will be performed.
+Touch any point in the image to set an encryption region around it. You can move the selection (touching the interior of the rectangle and dragging), change its shape (dragging the grey square in its bottom right corner), or remove it (with a short tap in its center). You can also press the Faces button below, which will automatically try to find all the faces in the image.
+ 
+If you have finished selecting regions, it is time to assign permissions on them. Press the Done! button, and the rectangles will change their color. If a rectangle is shown in red, it means that nobody but you will be able to decrypt it. To grant permission to other people on a region, tap on it, and choose from the list of your contacts.  (You don’t need to grant permissions on yourself!). A square with permissions granted will be highlighted in green.
+ 
+When you are satisfied with the permission assignation, press again the Done! button. The application will send the information to the server, and it will receive the corresponding keys to encrypt the image. If everything went well, the result of the encryption will be shown on the screen. Press the Back button in your phone to go back to the main menu.
+ 
+
+Note on social networks:
+ Due to how many social networks process images before uploading them, this application can’t work with some of them. Particularly, as of the writing of this document, some of the most popular, as Facebook or Twitter, are not compatible.
+Moreover, please note that the auto-enhance option in Google+ must be disabled before uploading encrypted images; otherwise, changes in the image make the original information unretrievable.
+
+ 
+
+Decryption of an image
+To decrypt an image from the main menú, press the Decrypt button. The gallery of your device will be displayed, from where you can select any image. The application will query the server, and if the image is in the database and you have permissions on it, it will be shown, with the appropriate regions decrypted. Otherwise, the image will be shown as is.
+ 
+Alternatively, you can open the image directly with the application from a file manager. This automatically handles contacting the server, in the same way as decrypting from the menu.
+
+ 
+
+Logging out and changing accounts
+To change the account you are using, in the main menú, press the lower bar, where your email is shown. A menu will be displayer where you can change between all accounts assigned to your phone.
+
+Checking and updating permissions
+From the main menu, press the My images button; a list of all the pictures you have encrypted will be shown (with their filename, and date when you did).
+
+ 
+If you tap any of them, a view will be displayed, showing details of the same. To help you, a rectangle with the proportions of the image will appear. In it, colored sectors will show which areas were encrypted in the picture. Below, a list of coordinates of encrypted regions will be shown, highlighted in the same color that the corresponding rectangle. A list of people who have permission to decrypt them is also displayed.
+ 
+
+To revoke permission from somebody, tap on his name (a confirmation dialog will appear before deleting it). To grant permission to somebody to decrypt a region, press the Add button in the corresponding header, and select the contact(s) from the list.
+When you are done, press Confirm; the data will be sent to the server, and the image will be updated. If you change your mind, press Cancel instead; changes won’t take effect.
