@@ -17,6 +17,10 @@ Both projects had to be modified for our purposes. The Patches folder contains t
 2. build-instructions:
 These files (pdf with images, and plaintext) contain instructions to build the code (both Java and native sides).
 
+3. how-to-use (pdf with images, and plaintext) contains a manual for the application.
+
+4. LockPic.apk is the compiled application, ready to be installed in a device
+
 The remaining files and folders are the code (Java side at /src, C side at /jni), libraries, and compiled binaries.
 
 This project is protected by GNU General Public License v3.0.
